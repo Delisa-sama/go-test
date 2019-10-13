@@ -14,3 +14,13 @@
     
 ### Dev run (without docker)
     ./dev.sh
+    
+### Requests
+
+- Add News
+    `/news/add?title=qwe&date=02 Jan 06 15:04 -0700`
+    - title: string
+    - date: date string in format RFC822Z
+- Get News
+    `/news/get?id=21`
+    - id: int
