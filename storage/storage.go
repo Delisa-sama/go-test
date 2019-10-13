@@ -1,10 +1,13 @@
 package main
 
 import (
+	"flag"
 	contract "github.com/Delisa-sama/go-test/proto"
 	"github.com/golang/protobuf/proto"
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/sqlite"
+	"github.com/spf13/pflag"
+	"github.com/spf13/viper"
 	"github.com/streadway/amqp"
 	"log"
 	"time"
@@ -16,8 +19,23 @@ type News struct {
 	Date  int64
 }
 
+func initFlags() error {
+	flag.String("db_dialect", "sqlite3", "Dialect of DB for gorm")
+	flag.String("db_args", "./.db", "Args for DB. For sqlite it is path to db file, for PostgreSQL it is connection string")
+	flag.String("amqp_url", "amqp://guest:guest@localhost:5672/", "URL string for connect to message broker via amqp")
+
+	pflag.CommandLine.AddGoFlagSet(flag.CommandLine)
+	pflag.Parse()
+	return viper.BindPFlags(pflag.CommandLine)
+}
+
 func main() {
-	db, err := gorm.Open("sqlite3", "./.db")
+	err := initFlags()
+	if err != nil {
+		log.Fatalln("Failed to parse flags")
+	}
+
+	db, err := gorm.Open(viper.GetString("db_dialect"), viper.GetString("db_args"))
 	if err != nil {
 		log.Fatalln("Failed to connect to DB")
 	}
@@ -25,7 +43,7 @@ func main() {
 
 	db.AutoMigrate(&News{})
 
-	conn, err := amqp.Dial("amqp://guest:guest@localhost:5672/")
+	conn, err := amqp.Dial(viper.GetString("amqp_url"))
 	if err != nil {
 		log.Fatalln("Failed to connect to broker")
 	}

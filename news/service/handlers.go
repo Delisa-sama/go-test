@@ -2,6 +2,7 @@ package service
 
 import (
 	"encoding/json"
+	"github.com/spf13/viper"
 	"log"
 	"net/http"
 	"strconv"
@@ -13,21 +14,21 @@ func GetNews(w http.ResponseWriter, r *http.Request) {
 
 	id, err := strconv.Atoi(newsId)
 	if err != nil {
-		writeJsonError(w, http.StatusBadRequest, "Failed to parse ID")
+		_ = writeJsonError(w, http.StatusBadRequest, "Failed to parse ID")
 		return
 	}
 
 	storage := StorageClient{}
-	err = storage.Connect("amqp://guest:guest@localhost:5672/") // TODO: Get URL from CLI
+	err = storage.Connect(viper.GetString("amqp_url"))
 	if err != nil {
-		writeJsonError(w, http.StatusInternalServerError, "Something went wrong")
+		_ = writeJsonError(w, http.StatusInternalServerError, "Something went wrong")
 		return
 	}
 	defer storage.Close()
 
 	response, err := storage.GetNews(id)
 	if err != nil {
-		writeJsonError(w, http.StatusInternalServerError, "Failed to get News")
+		_ = writeJsonError(w, http.StatusInternalServerError, "Failed to get News")
 		return
 	}
 
@@ -36,28 +37,26 @@ func GetNews(w http.ResponseWriter, r *http.Request) {
 }
 
 func AddNews(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "text/plain")
-
 	title := r.FormValue("title")
 	date := r.FormValue("date")
 
 	_, err := time.Parse(time.RFC822Z, date)
 	if err != nil {
-		writeJsonError(w, http.StatusBadRequest, "Failed to parse date")
+		_ = writeJsonError(w, http.StatusBadRequest, "Failed to parse date")
 		return
 	}
 
 	storage := StorageClient{}
-	err = storage.Connect("amqp://guest:guest@localhost:5672/") // TODO: Get URL from CLI
+	err = storage.Connect(viper.GetString("amqp_url"))
 	if err != nil {
-		writeJsonError(w, http.StatusInternalServerError, "Something went wrong")
+		_ = writeJsonError(w, http.StatusInternalServerError, "Something went wrong")
 		return
 	}
 	defer storage.Close()
 
 	response, err := storage.AddNews(title, date)
 	if err != nil {
-		writeJsonError(w, http.StatusInternalServerError, "Failed to add News")
+		_ = writeJsonError(w, http.StatusInternalServerError, "Failed to add News")
 		return
 	}
 
@@ -65,17 +64,23 @@ func AddNews(w http.ResponseWriter, r *http.Request) {
 	_, _ = w.Write(out)
 }
 
-func writeJsonResponse(w http.ResponseWriter, status int, v interface{}) {
+func writeJsonResponse(w http.ResponseWriter, status int, v interface{}) error {
 	data, err := json.Marshal(v)
 	if err != nil {
+		log.Println("Failed to marshal response")
+		return err
 	}
+
 	w.WriteHeader(status)
+	w.Header().Set("Content-Type", "application/json")
 	_, _ = w.Write(data)
+
+	return nil
 }
 
-func writeJsonError(w http.ResponseWriter, status int, msg string) {
+func writeJsonError(w http.ResponseWriter, status int, msg string) error {
 	log.Printf("Error: %s", msg)
-	writeJsonResponse(w, status, ErrorResponse{Code: status, Message: msg})
+	return writeJsonResponse(w, status, ErrorResponse{Code: status, Message: msg})
 }
 
 type ErrorResponse struct {

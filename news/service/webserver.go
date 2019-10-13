@@ -4,9 +4,10 @@ import (
 	"github.com/gorilla/mux"
 	"log"
 	"net/http"
+	"strconv"
 )
 
-func StartWebServer(port string) {
+func StartWebServer(port int) {
 
 	r := mux.NewRouter()
 
@@ -15,10 +16,12 @@ func StartWebServer(port string) {
 	}
 	http.Handle("/", r)
 
-	log.Println("Starting HTTP service at " + port)
-	err := http.ListenAndServe(":"+port, nil)
+	addr := ":" + strconv.Itoa(port)
+
+	log.Println("Starting HTTP service at " + addr)
+	err := http.ListenAndServe(addr, nil)
 
 	if err != nil {
-		log.Fatalf("An error occured starting HTTP listener at port %d: %s", port, err)
+		log.Fatalf("An error occured starting HTTP listener [%s]: %s", addr, err)
 	}
 }

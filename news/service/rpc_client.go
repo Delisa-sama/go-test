@@ -5,6 +5,7 @@ import (
 	"errors"
 	contract "github.com/Delisa-sama/go-test/proto"
 	"github.com/golang/protobuf/proto"
+	"github.com/spf13/viper"
 	"github.com/streadway/amqp"
 	"log"
 	"time"
@@ -107,7 +108,7 @@ func (s *StorageClient) GetNews(id int) (*GetNewsResponse, error) {
 	select {
 	case response := <-listen:
 		return response, nil
-	case <-time.After(5 * time.Second): // TODO: Get timeout from CLI
+	case <-time.After(time.Duration(viper.GetInt("storage_timeout")) * time.Second):
 		return nil, errors.New("timeout")
 	case msg := <-errorCh:
 		return nil, errors.New(msg)
@@ -198,7 +199,7 @@ func (s *StorageClient) AddNews(title, date string) (*AddNewsResponse, error) {
 	select {
 	case data := <-listen:
 		return data, nil
-	case <-time.After(5 * time.Second): // TODO: Get timeout from CLI
+	case <-time.After(time.Duration(viper.GetInt("storage_timeout")) * time.Second): // TODO: Get timeout from CLI
 		return nil, errors.New("timeout")
 	case msg := <-errorCh:
 		return nil, errors.New(msg)
