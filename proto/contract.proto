@@ -1,0 +1,30 @@
+syntax = "proto3";
+package contract;
+
+enum ResponseStatus {
+    FAIL = 0;
+    OK = 1;
+}
+
+message AddNewsRequest {
+    ResponseStatus status = 1;
+    string title = 2;
+    string date = 3;
+}
+
+message OnAddNewsResponse {
+    ResponseStatus status = 1;
+    uint32 id = 2;
+}
+
+message GetNewsRequest {
+    ResponseStatus status = 1;
+    uint32 id = 2;
+}
+
+message OnGetNewsResponse {
+    ResponseStatus status = 1;
+    uint32 id = 2;
+    string title = 3;
+    string date = 4;
+}
